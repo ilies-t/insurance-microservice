@@ -1,0 +1,118 @@
+version: '3'
+
+networks:
+  kong-net:
+    driver: bridge
+
+services:
+
+  # Client microservice related
+  client-db:
+    image: postgres:12.0-alpine
+    restart: always
+    volumes:
+      - ./microservice-client/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    env_file:
+      - .env.docker
+    environment:
+      POSTGRES_DB: insuranceclient
+    ports:
+      - "5433:5432"
+  ms-client:
+    depends_on:
+      - client-db
+    build:
+      context: ./microservice-client
+      dockerfile: Dockerfile
+    ports:
+      - "8012:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://client-db:5432/insuranceclient
+      SPRING_DATASOURCE_USERNAME: insuranceclient_user
+      SPRING_DATASOURCE_PASSWORD: 044MBUSeyN6J7e
+      SPRING_MS_CONTRACT_URL: http://ms-contract:8080
+      SPRING_KAFKA_URL: kafka:9092
+      SPRING_KAFKA_CONSUMER_GROUP: ms-client-group
+      SPRING_KAFKA_MS_CLIENT_TOPIC_NAME: ms-client-topic
+
+  # Contract microservice related
+  contract-db:
+    image: postgres:12.0-alpine
+    restart: always
+    volumes:
+      - ./microservice-contract/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    env_file:
+      - .env.docker
+    environment:
+      POSTGRES_DB: insurancecontract
+    ports:
+      - "5434:5432"
+  ms-contract:
+    depends_on:
+      - contract-db
+    build:
+      context: ./microservice-contract
+      dockerfile: Dockerfile
+    ports:
+      - "8013:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://contract-db:5432/insurancecontract
+      SPRING_DATASOURCE_USERNAME: insurancecontract_user
+      SPRING_DATASOURCE_PASSWORD: ToC5N1AXnK4VUz
+      SPRING_KAFKA_URL: kafka:9092
+      SPRING_KAFKA_MS_CLIENT_TOPIC_NAME: ms-client-topic
+
+  # API Gateway
+  kong:
+    image: kong:3.1.1-alpine
+    build:
+      context: ./kong
+      dockerfile: Dockerfile
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: kong.yml
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./kong.yml:/etc/kong/kong.yml
+
+  # Kafka related
+  # See more @ https://github.com/bitnami/containers/blob/main/bitnami/kafka/docker-compose.yml
+  kafka:
+    image: docker.io/bitnami/kafka:3.6
+    ports:
+      - "9092:9092"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      # Listeners
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+  init-kafka:
+    image: confluentinc/cp-kafka:6.1.1
+    depends_on:
+      - kafka
+    entrypoint: ['/bin/sh', '-c']
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server kafka:9092 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic ms-client-topic --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic ms-contract-topic --replication-factor 1 --partitions 1
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka:9092 --list
+      "
+
+volumes:
+  kafka_data:
+    driver: local

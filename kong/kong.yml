@@ -1,0 +1,20 @@
+_format_version: "1.1"
+
+services:
+  - name: ms-client
+    url: http://ms-client:8080/client
+    routes:
+      - name: clients
+        paths:
+          - /client
+        methods:
+          - GET
+  - name: ms-contract
+    url: http://ms-contract:8080/contract
+    routes:
+      - name: contracts
+        paths:
+          - /contract
+        methods:
+          - GET
+          - POST

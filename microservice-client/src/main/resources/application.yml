@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_URL}
+    consumer:
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        ddl-auto: none
+    open-in-view: false
+
+kafka:
+  bootstrap-servers: ${SPRING_KAFKA_URL}
+  ms-client:
+    consumer-group-id: ${SPRING_KAFKA_CONSUMER_GROUP}
+    topic-name: ${SPRING_KAFKA_MS_CLIENT_TOPIC_NAME}
+
+microservice:
+  contract.url: ${SPRING_MS_CONTRACT_URL}

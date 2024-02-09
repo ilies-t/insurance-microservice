@@ -1,0 +1,46 @@
+{
+	"info": {
+		"_postman_id": "",
+		"name": "Insurance microservice architecture",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": ""
+	},
+	"item": [
+		{
+			"name": "Get all contracts",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:8000/contract"
+			},
+			"response": []
+		},
+		{
+			"name": "Get all clients",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:8000/client"
+			},
+			"response": []
+		},
+		{
+			"name": "Get one client with contracts by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:8000/client/be57a327-c93b-41c7-97dd-64190bfe1a23"
+			},
+			"response": []
+		},
+		{
+			"name": "Save a new contract by client ID",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": "http://localhost:8000/contract/1198b380-74d9-486e-90c8-550ba0f99945/be57a327-c93b-41c7-97dd-64190bfe1a23"
+			},
+			"response": []
+		}
+	]
+}
